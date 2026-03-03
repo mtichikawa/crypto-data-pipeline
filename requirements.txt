@@ -1,0 +1,26 @@
+# Market data
+ccxt==4.4.57
+
+# Database
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.25
+
+# Data
+pandas==2.1.4
+numpy==1.26.4
+
+# HTTP / news ingestion
+requests==2.31.0
+
+# Utilities
+python-dotenv==1.0.0
+tqdm==4.66.1
+
+# Jupyter
+jupyter==1.0.0
+ipykernel==6.27.1
+nbconvert==7.11.0
+
+# Testing
+pytest==7.4.4
+pytest-cov==4.1.0
