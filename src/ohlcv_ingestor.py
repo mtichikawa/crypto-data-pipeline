@@ -1,5 +1,5 @@
 """
-src/ohlcv_ingestor.py — Fetch OHLCV candles from Binance via ccxt.
+src/ohlcv_ingestor.py — Fetch OHLCV candles from Kraken via ccxt.
 
 Pulls historical and incremental candle data for configured pairs and
 timeframes, inserts into the ohlcv table. Uses ON CONFLICT DO NOTHING so
@@ -22,18 +22,16 @@ from src.db import get_engine, ohlcv
 load_dotenv()
 log = logging.getLogger(__name__)
 
-PAIRS = ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
+PAIRS = ["XBT/USD", "ETH/USD", "SOL/USD"]
 TIMEFRAMES = ["5m", "15m", "1h", "4h", "1d"]
 
-# Binance max candles per request
-BATCH_LIMIT = 1000
+# Kraken max candles per request
+BATCH_LIMIT = 720
 
 
 class OHLCVIngestor:
     def __init__(self):
-        self.exchange = ccxt.binance({
-            "apiKey":    os.getenv("BINANCE_API_KEY", ""),
-            "secret":    os.getenv("BINANCE_API_SECRET", ""),
+        self.exchange = ccxt.kraken({
             "enableRateLimit": True,
         })
         self.engine = get_engine()
@@ -43,7 +41,7 @@ class OHLCVIngestor:
         Fetch up to BATCH_LIMIT candles for one pair/timeframe.
 
         Args:
-            pair:       e.g. 'BTC/USDT'
+            pair:       e.g. 'XBT/USD'
             timeframe:  e.g. '1h'
             since_ms:   Unix timestamp in milliseconds; if None, fetches most recent candles.
 
@@ -62,7 +60,7 @@ class OHLCVIngestor:
 
     def fetch_full_history(self, pair: str, timeframe: str, since_ms: int) -> pd.DataFrame:
         """
-        Page through Binance history from since_ms to present, BATCH_LIMIT candles at a time.
+        Page through Kraken history from since_ms to present, BATCH_LIMIT candles at a time.
         """
         all_frames = []
         cursor = since_ms
