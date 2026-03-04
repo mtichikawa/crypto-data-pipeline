@@ -15,7 +15,6 @@ from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 
 import requests
-from sqlalchemy import insert
 from dotenv import load_dotenv
 
 from src.db import get_engine, news_headlines

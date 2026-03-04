@@ -14,7 +14,8 @@ from datetime import datetime, timezone
 
 import ccxt
 import pandas as pd
-from sqlalchemy import insert, text
+from sqlalchemy import text
+from sqlalchemy.dialects.postgresql import insert
 from dotenv import load_dotenv
 
 from src.db import get_engine, ohlcv
@@ -22,7 +23,7 @@ from src.db import get_engine, ohlcv
 load_dotenv()
 log = logging.getLogger(__name__)
 
-PAIRS = ["XBT/USD", "ETH/USD", "SOL/USD"]
+PAIRS = ["BTC/USD", "ETH/USD", "SOL/USD"]
 TIMEFRAMES = ["5m", "15m", "1h", "4h", "1d"]
 
 # Kraken max candles per request
@@ -41,7 +42,7 @@ class OHLCVIngestor:
         Fetch up to BATCH_LIMIT candles for one pair/timeframe.
 
         Args:
-            pair:       e.g. 'XBT/USD'
+            pair:       e.g. 'BTC/USD'
             timeframe:  e.g. '1h'
             since_ms:   Unix timestamp in milliseconds; if None, fetches most recent candles.
 

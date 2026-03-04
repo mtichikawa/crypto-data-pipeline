@@ -17,7 +17,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import requests
-from sqlalchemy import insert, update, select, text
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import update, select, text
 from dotenv import load_dotenv
 
 from src.db import get_engine, market_events, ohlcv

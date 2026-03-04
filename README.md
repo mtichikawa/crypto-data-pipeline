@@ -87,7 +87,7 @@ Crypto and macro news headlines for the T3 FinBERT text signal path.
 
 | Pairs | Timeframes |
 |-------|------------|
-| XBT/USD | 5m, 15m, 1h, 4h, 1D |
+| BTC/USD | 5m, 15m, 1h, 4h, 1D |
 | ETH/USD | 5m, 15m, 1h, 4h, 1D |
 | SOL/USD | 5m, 15m, 1h, 4h, 1D |
 
