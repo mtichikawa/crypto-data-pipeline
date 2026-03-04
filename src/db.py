@@ -31,16 +31,19 @@ metadata = MetaData()
 
 ohlcv = Table(
     "ohlcv", metadata,
-    Column("id",        Integer, primary_key=True, autoincrement=True),
-    Column("pair",      String(20),  nullable=False),
-    Column("timeframe", String(10),  nullable=False),
-    Column("timestamp", TIMESTAMP(timezone=True), nullable=False),
-    Column("open",      Numeric(20, 8), nullable=False),
-    Column("high",      Numeric(20, 8), nullable=False),
-    Column("low",       Numeric(20, 8), nullable=False),
-    Column("close",     Numeric(20, 8), nullable=False),
-    Column("volume",    Numeric(30, 8), nullable=False),
-    UniqueConstraint("pair", "timeframe", "timestamp", name="uq_ohlcv"),
+    Column("id",              Integer, primary_key=True, autoincrement=True),
+    Column("pair",            String(20),  nullable=False),
+    Column("timeframe",       String(10),  nullable=False),
+    Column("open_time",       TIMESTAMP(timezone=True), nullable=False),
+    Column("open",            Numeric(20, 8), nullable=False),
+    Column("high",            Numeric(20, 8), nullable=False),
+    Column("low",             Numeric(20, 8), nullable=False),
+    Column("close",           Numeric(20, 8), nullable=False),
+    Column("volume",          Numeric(30, 8), nullable=False),
+    Column("near_event",      Boolean,     nullable=True, default=False),
+    Column("event_type",      String(50),  nullable=True),   # e.g. CPI, NFP, NYSE_OPEN
+    Column("mins_from_event", Integer,     nullable=True),   # signed: negative = before event
+    UniqueConstraint("pair", "timeframe", "open_time", name="uq_ohlcv"),
 )
 
 market_events = Table(
@@ -52,7 +55,6 @@ market_events = Table(
     Column("actual",     String(50),  nullable=True),
     Column("forecast",   String(50),  nullable=True),
     Column("previous",   String(50),  nullable=True),
-    Column("near_event", Boolean,     default=False),
     UniqueConstraint("event_time", "event_name", name="uq_market_events"),
 )
 
