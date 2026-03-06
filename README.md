@@ -4,23 +4,26 @@ A production-grade market data pipeline that powers the [trading signal engine](
 
 ## Overview
 
-This pipeline pulls live OHLCV data from Binance via `ccxt`, ingests economic calendar events with volatility tagging, and collects crypto news headlines for downstream FinBERT text signal generation. All data lands in PostgreSQL and is queryable by the rest of the trading arc.
+This pipeline pulls live OHLCV data from Kraken via `ccxt`, ingests economic calendar events with volatility tagging, and collects crypto news headlines for downstream FinBERT text signal generation. All data lands in PostgreSQL and is queryable by the rest of the trading arc.
 
 The system is designed for research and paper trading — not live execution.
+
+> **Exchange note:** Kraken is used instead of Binance due to Binance's US geo-restrictions.
 
 ---
 
 ## Architecture
 
 ```
-Binance API (ccxt)
+Kraken API (ccxt)
       │
       ▼
   ohlcv table          ← raw OHLCV candles, multi-pair, multi-timeframe
+      │                   near_event / event_type / mins_from_event tagged here
       │
-      ├──► market_events table   ← economic calendar with near_event flag
+  market_events table  ← economic calendar (CPI, NFP, FOMC, etc.)
       │
-      └──► news_headlines table  ← crypto/macro headlines for T3 FinBERT path
+  news_headlines table ← crypto/macro headlines for T3 FinBERT path
 
       ▼
 PostgreSQL (local)
@@ -34,24 +37,27 @@ PostgreSQL (local)
 ## Database Schema
 
 ### `ohlcv`
-Raw candlestick data from Binance.
+Raw candlestick data from Kraken.
 
 | Column | Type | Description |
 |--------|------|-------------|
 | id | SERIAL PK | |
-| pair | VARCHAR | e.g. `BTC/USDT` |
-| timeframe | VARCHAR | `1h`, `4h`, `1D` |
-| timestamp | TIMESTAMPTZ | candle open time (UTC) |
+| pair | VARCHAR | e.g. `BTC/USD` |
+| timeframe | VARCHAR | `5m`, `15m`, `1h`, `4h`, `1d` |
+| open_time | TIMESTAMPTZ | candle open time (UTC) |
 | open | NUMERIC | |
 | high | NUMERIC | |
 | low | NUMERIC | |
 | close | NUMERIC | |
 | volume | NUMERIC | |
+| near_event | BOOLEAN | True if candle falls within ±2 candles of a high-impact macro event |
+| event_type | VARCHAR | e.g. `CPI`, `NFP`, `FOMC` (set when near_event=True) |
+| mins_from_event | INTEGER | signed minutes from nearest event (negative = before) |
 
-Unique constraint on `(pair, timeframe, timestamp)` — safe to re-run ingestion.
+Unique constraint on `(pair, timeframe, open_time)` — safe to re-run ingestion.
 
 ### `market_events`
-Economic calendar events with volatility impact tagging.
+Economic calendar events.
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -62,12 +68,8 @@ Economic calendar events with volatility impact tagging.
 | actual | VARCHAR | reported value (nullable until released) |
 | forecast | VARCHAR | consensus estimate |
 | previous | VARCHAR | prior period value |
-| near_event | BOOLEAN | True if any candle falls within ±2 candles of a high-impact event |
 
-**Key event times tagged:**
-- `08:30 ET` — CPI, NFP, PPI, Retail Sales
-- `09:30 ET` — US equity market open
-- `10:00 ET` — ISM, Consumer Sentiment
+Unique constraint on `(event_time, event_name)`.
 
 ### `news_headlines`
 Crypto and macro news headlines for the T3 FinBERT text signal path.
@@ -87,9 +89,9 @@ Crypto and macro news headlines for the T3 FinBERT text signal path.
 
 | Pairs | Timeframes |
 |-------|------------|
-| BTC/USD | 5m, 15m, 1h, 4h, 1D |
-| ETH/USD | 5m, 15m, 1h, 4h, 1D |
-| SOL/USD | 5m, 15m, 1h, 4h, 1D |
+| BTC/USD | 5m, 15m, 1h, 4h, 1d |
+| ETH/USD | 5m, 15m, 1h, 4h, 1d |
+| SOL/USD | 5m, 15m, 1h, 4h, 1d |
 
 ---
 
@@ -97,8 +99,8 @@ Crypto and macro news headlines for the T3 FinBERT text signal path.
 
 | Data | Source | Method |
 |------|--------|--------|
-| OHLCV candles | Binance | `ccxt` library |
-| Economic calendar | CryptoPanic API / manual seed | REST API + JSON |
+| OHLCV candles | Kraken | `ccxt` library |
+| Economic calendar | CryptoPanic API / manual seed JSON | REST API + JSON |
 | News headlines | CryptoPanic API, CoinDesk RSS, CoinTelegraph RSS | REST / RSS ingestion |
 
 ---
@@ -110,7 +112,7 @@ crypto-data-pipeline/
 ├── src/
 │   ├── __init__.py
 │   ├── db.py              # SQLAlchemy engine + table definitions
-│   ├── ohlcv_ingestor.py  # Binance OHLCV fetcher via ccxt
+│   ├── ohlcv_ingestor.py  # Kraken OHLCV fetcher via ccxt (incremental)
 │   ├── events_ingestor.py # Economic calendar ingestion + near_event tagging
 │   └── news_ingestor.py   # Headline ingestion from CryptoPanic / RSS
 ├── scripts/
@@ -119,9 +121,7 @@ crypto-data-pipeline/
 ├── notebooks/
 │   └── pipeline_exploration.ipynb
 ├── tests/
-│   ├── __init__.py
-│   ├── test_ohlcv.py
-│   └── test_events.py
+│   └── __init__.py
 ├── data/                  # gitignored
 ├── .env                   # DB credentials + API keys (gitignored)
 ├── .env.example
