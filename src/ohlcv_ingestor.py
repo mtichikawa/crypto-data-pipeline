@@ -53,6 +53,7 @@ class OHLCVIngestor:
         if not raw:
             return pd.DataFrame()
 
+        # columns must match ccxt OHLCV schema: [timestamp_ms, open, high, low, close, volume]
         df = pd.DataFrame(raw, columns=["ts_ms", "open", "high", "low", "close", "volume"])
         df["open_time"] = pd.to_datetime(df["ts_ms"], unit="ms", utc=True)
         df["pair"] = pair
