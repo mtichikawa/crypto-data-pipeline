@@ -175,7 +175,7 @@ This repo is T1 in a 5-part series:
 | **T1 · crypto-data-pipeline** (this repo) | Market data foundation |
 | T2 · trading-chart-generator | Annotated candlestick chart images |
 | T3 · trading-signal-engine | LLM vision + FinBERT dual-path signals |
-| T4 · trading-backtester | Signal backtesting with vectorbt |
+| T4 · trading-backtester | Signal backtesting with parameter sweep |
 | T5 · trading-dashboard | Live paper P&L dashboard |
 
 ---
