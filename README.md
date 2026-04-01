@@ -1,14 +1,22 @@
-# crypto-data-pipeline
+# crypto-data-pipeline · T1
 
-A production-grade market data pipeline that powers the [trading signal engine](https://github.com/mtichikawa/trading-signal-engine) (T3) and [backtester](https://github.com/mtichikawa/trading-backtester) (T4) in a 5-repo LLM trading system.
+Live market data foundation for the T1–T5 paper trading arc. Pulls OHLCV candles from Kraken via ccxt, tags macro market events, and logs news headlines for downstream FinBERT sentiment analysis. All data lands in PostgreSQL and is consumed by T2 (chart generation) and T3 (signal engine).
 
-## Overview
+Designed for research and paper trading — not live execution.
 
-This pipeline pulls live OHLCV data from Kraken via `ccxt`, ingests economic calendar events with volatility tagging, and collects crypto news headlines for downstream FinBERT text signal generation. All data lands in PostgreSQL and is queryable by the rest of the trading arc.
+---
 
-The system is designed for research and paper trading — not live execution.
+## Trading Arc
 
-> **Exchange note:** Kraken is used instead of Binance due to Binance's US geo-restrictions.
+| Repo | Role | Status |
+|------|------|--------|
+| **T1 · crypto-data-pipeline** | Live OHLCV ingestion · market event tagging | Shipped Mar 6 |
+| T2 · trading-chart-generator | Candlestick PNGs + JSON sidecars · 25/25 tests | Shipped Mar 10 |
+| T3 · trading-signal-engine | Technical indicators + FinBERT sentiment · 51/51 tests | Shipped Mar 16 |
+| T4 · trading-backtester | Backtesting + parameter sweep · 72/72 tests | Shipped Mar 26 |
+| T5 · trading-dashboard | Streamlit oversight UI · 8/8 tests | Shipped Mar 31 · [Live Demo](https://mtichikawa-trading.streamlit.app) |
+
+> Exchange note: Kraken is used instead of Binance due to Binance's US geo-restrictions.
 
 ---
 
@@ -23,13 +31,13 @@ Kraken API (ccxt)
       │
   market_events table  ← economic calendar (CPI, NFP, FOMC, etc.)
       │
-  news_headlines table ← crypto/macro headlines for T3 FinBERT path
-
+  news_headlines table ← crypto/macro headlines for T3 FinBERT sentiment path
+      │
       ▼
 PostgreSQL (local)
       │
-      ├──► T2: trading-chart-generator  (reads ohlcv + market_events)
-      └──► T3: trading-signal-engine    (reads ohlcv + market_events + news_headlines)
+      ├──► T2: trading-chart-generator  (reads ohlcv)
+      └──► T3: trading-signal-engine    (reads ohlcv + news_headlines)
 ```
 
 ---
@@ -37,50 +45,35 @@ PostgreSQL (local)
 ## Database Schema
 
 ### `ohlcv`
-Raw candlestick data from Kraken.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| id | SERIAL PK | |
 | pair | VARCHAR | e.g. `BTC/USD` |
 | timeframe | VARCHAR | `5m`, `15m`, `1h`, `4h`, `1d` |
 | open_time | TIMESTAMPTZ | candle open time (UTC) |
-| open | NUMERIC | |
-| high | NUMERIC | |
-| low | NUMERIC | |
-| close | NUMERIC | |
-| volume | NUMERIC | |
-| near_event | BOOLEAN | True if candle falls within ±2 candles of a high-impact macro event |
-| event_type | VARCHAR | e.g. `CPI`, `NFP`, `FOMC` (set when near_event=True) |
-| mins_from_event | INTEGER | signed minutes from nearest event (negative = before) |
+| open / high / low / close / volume | NUMERIC | OHLCV values |
+| near_event | BOOLEAN | True if within ±2 candles of a macro event |
+| event_type | VARCHAR | `CPI`, `NFP`, `FOMC`, etc. |
+| mins_from_event | INTEGER | signed minutes from nearest event |
 
-Unique constraint on `(pair, timeframe, open_time)` — safe to re-run ingestion.
+Unique constraint on `(pair, timeframe, open_time)` — safe to re-run.
 
 ### `market_events`
-Economic calendar events.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| id | SERIAL PK | |
 | event_time | TIMESTAMPTZ | scheduled release time (UTC) |
-| event_name | VARCHAR | e.g. `CPI`, `NFP`, `ISM` |
+| event_name | VARCHAR | `CPI`, `NFP`, `ISM`, etc. |
 | impact | VARCHAR | `high`, `medium`, `low` |
-| actual | VARCHAR | reported value (nullable until released) |
-| forecast | VARCHAR | consensus estimate |
-| previous | VARCHAR | prior period value |
-
-Unique constraint on `(event_time, event_name)`.
+| actual / forecast / previous | VARCHAR | values (nullable until released) |
 
 ### `news_headlines`
-Crypto and macro news headlines for the T3 FinBERT text signal path.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| id | SERIAL PK | |
 | published_at | TIMESTAMPTZ | article publish time (UTC) |
-| source | VARCHAR | e.g. `coindesk`, `cointelegraph` |
+| source | VARCHAR | `coindesk`, `cointelegraph`, etc. |
 | headline | TEXT | article title |
-| url | TEXT | source URL |
 | pair_tag | VARCHAR | `BTC`, `ETH`, `SOL`, `crypto`, `macro` |
 
 ---
@@ -95,22 +88,11 @@ Crypto and macro news headlines for the T3 FinBERT text signal path.
 
 ---
 
-## Data Sources
-
-| Data | Source | Method |
-|------|--------|--------|
-| OHLCV candles | Kraken | `ccxt` library |
-| Economic calendar | CryptoPanic API / manual seed JSON | REST API + JSON |
-| News headlines | CryptoPanic API, CoinDesk RSS, CoinTelegraph RSS | REST / RSS ingestion |
-
----
-
 ## Project Structure
 
 ```
 crypto-data-pipeline/
 ├── src/
-│   ├── __init__.py
 │   ├── db.py              # SQLAlchemy engine + table definitions
 │   ├── ohlcv_ingestor.py  # Kraken OHLCV fetcher via ccxt (incremental)
 │   ├── events_ingestor.py # Economic calendar ingestion + near_event tagging
@@ -120,44 +102,27 @@ crypto-data-pipeline/
 │   └── run_pipeline.py    # Full pipeline: OHLCV + events + news
 ├── notebooks/
 │   └── pipeline_exploration.ipynb
-├── tests/
-│   └── __init__.py
-├── data/                  # gitignored
-├── .env                   # DB credentials + API keys (gitignored)
-├── .env.example
 ├── requirements.txt
-└── README.md
+└── .env.example
 ```
 
 ---
 
 ## Setup
 
-### 1. Clone and install
-
 ```bash
 git clone https://github.com/mtichikawa/crypto-data-pipeline.git
 cd crypto-data-pipeline
 pip install -r requirements.txt
-```
-
-### 2. Configure environment
-
-```bash
 cp .env.example .env
-# Edit .env with your PostgreSQL credentials and API keys
-```
-
-### 3. Initialize the database
-
-```bash
+# Edit .env with PostgreSQL credentials
 python scripts/init_db.py
 ```
 
-### 4. Run the pipeline
+## Run
 
 ```bash
-# Full run: OHLCV + events + news
+# Full pipeline: OHLCV + events + news
 python scripts/run_pipeline.py
 
 # OHLCV only
@@ -166,20 +131,6 @@ python scripts/run_pipeline.py --ohlcv-only
 
 ---
 
-## Trading System Arc
-
-This repo is T1 in a 5-part series:
-
-| Repo | Role |
-|------|------|
-| **T1 · crypto-data-pipeline** (this repo) | Market data foundation |
-| T2 · trading-chart-generator | Annotated candlestick chart images |
-| T3 · trading-signal-engine | LLM vision + FinBERT dual-path signals |
-| T4 · trading-backtester | Signal backtesting with parameter sweep |
-| T5 · trading-dashboard | Live paper P&L dashboard |
-
----
-
 ## Contact
 
-Mike Ichikawa — projects.ichikawa@gmail.com · [mtichikawa.github.io](https://mtichikawa.github.io)
+Mike Ichikawa · [projects.ichikawa@gmail.com](mailto:projects.ichikawa@gmail.com) · [mtichikawa.github.io](https://mtichikawa.github.io)
