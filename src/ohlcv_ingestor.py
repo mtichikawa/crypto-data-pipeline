@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 PAIRS = ["BTC/USD", "ETH/USD", "SOL/USD"]
 TIMEFRAMES = ["5m", "15m", "1h", "4h", "1d"]
 
-# Kraken max candles per request
+# Kraken returns at most 720 candles per OHLCV request regardless of limit parameter
 BATCH_LIMIT = 720
 
 
