@@ -140,7 +140,6 @@ class EventsIngestor:
                         actual=ev.get("actual"),
                         forecast=ev.get("forecast"),
                         previous=ev.get("previous"),
-                        near_event=False,
                     ).on_conflict_do_nothing(constraint="uq_market_events")
                 )
                 inserted += result.rowcount
@@ -180,8 +179,8 @@ class EventsIngestor:
                     update(ohlcv)
                     .where(
                         ohlcv.c.timeframe == timeframe,
-                        ohlcv.c.timestamp >= et - window,
-                        ohlcv.c.timestamp <= et + window,
+                        ohlcv.c.open_time >= et - window,
+                        ohlcv.c.open_time <= et + window,
                     )
                     .values(near_event=True)
                 )

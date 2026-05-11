@@ -16,6 +16,7 @@ from email.utils import parsedate_to_datetime
 
 import requests
 from dotenv import load_dotenv
+from sqlalchemy.dialects.postgresql import insert
 
 from src.db import get_engine, news_headlines
 
