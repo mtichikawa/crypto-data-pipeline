@@ -86,7 +86,10 @@ class OHLCVIngestor:
         return pd.concat(all_frames, ignore_index=True)
 
     def insert_candles(self, df: pd.DataFrame) -> int:
-        """Insert candles into ohlcv table. ON CONFLICT DO NOTHING."""
+        """Insert candles into ohlcv table. ON CONFLICT DO NOTHING.
+
+        Safe to re-run: duplicate (pair, timeframe, open_time) rows are skipped.
+        """
         if df.empty:
             return 0
 
