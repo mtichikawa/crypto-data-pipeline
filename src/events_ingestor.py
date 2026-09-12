@@ -160,7 +160,7 @@ class EventsIngestor:
             timeframe: which ohlcv timeframe to tag
         """
         minutes = TIMEFRAME_MINUTES.get(timeframe, 60)
-        window = timedelta(minutes=minutes * 2)
+        window = timedelta(minutes=minutes * 2)  # ±2 candles: captures pre/post event volatility window
 
         with self.engine.begin() as conn:
             # Fetch all high-impact events
