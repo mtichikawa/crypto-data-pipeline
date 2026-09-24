@@ -164,6 +164,7 @@ class EventsIngestor:
 
         with self.engine.begin() as conn:
             # Fetch all high-impact events
+            # only high-impact events (CPI, NFP, FOMC, etc.) are expected to move markets
             rows = conn.execute(
                 select(market_events.c.event_time, market_events.c.event_name)
                 .where(market_events.c.impact == "high")
