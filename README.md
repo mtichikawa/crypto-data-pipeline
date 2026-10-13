@@ -1,20 +1,20 @@
 # crypto-data-pipeline · T1
 
-Live market data foundation for the T1–T5 paper trading arc. Pulls OHLCV candles from Kraken via ccxt, tags macro market events, and logs news headlines for downstream FinBERT sentiment analysis. All data lands in PostgreSQL and is consumed by T2 (chart generation) and T3 (signal engine).
+Live market data foundation for the T1–T5 trading system. Pulls OHLCV candles from Kraken via ccxt, tags macro market events, and logs news headlines for downstream FinBERT sentiment analysis. All data lands in PostgreSQL and is consumed by T2 (chart generation) and T3 (signal engine).
 
-Designed for research and paper trading — not live execution.
+Designed for research and backtesting, not live execution.
 
 ---
 
 ## Trading Arc
 
-| Repo | Role | Status |
-|------|------|--------|
-| **T1 · crypto-data-pipeline** | Live OHLCV ingestion · market event tagging | Shipped Mar 6 |
-| T2 · trading-chart-generator | Candlestick PNGs + JSON sidecars · 25/25 tests | Shipped Mar 10 |
-| T3 · trading-signal-engine | Technical indicators + FinBERT sentiment · 51/51 tests | Shipped Mar 16 |
-| T4 · trading-backtester | Backtesting + parameter sweep · 72/72 tests | Shipped Mar 26 |
-| T5 · trading-dashboard | Streamlit oversight UI · 8/8 tests | Shipped Mar 31 · [Live Demo](https://mtichikawa-trading.streamlit.app) |
+| Repo | Role |
+|------|------|
+| **T1 · crypto-data-pipeline** | Live OHLCV ingestion · market event tagging |
+| T2 · trading-chart-generator | Candlestick PNGs + JSON sidecars |
+| T3 · trading-signal-engine | Technical indicators + FinBERT sentiment |
+| T4 · trading-backtester | Backtesting + parameter sweep |
+| T5 · trading-dashboard | Streamlit oversight UI · [Live Demo](https://mtichikawa-trading.streamlit.app) |
 
 > Exchange note: Kraken is used instead of Binance due to Binance's US geo-restrictions.
 
@@ -100,8 +100,8 @@ crypto-data-pipeline/
 ├── scripts/
 │   ├── init_db.py         # Create tables (run once)
 │   └── run_pipeline.py    # Full pipeline: OHLCV + events + news
-├── notebooks/
-│   └── pipeline_exploration.ipynb
+├── tests/
+│   └── test_smoke.py
 ├── requirements.txt
 └── .env.example
 ```
